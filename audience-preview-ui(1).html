@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audience Preview UI Prototype</title>
+<style>
+:root{
+  --side:#3b4452; --side-fg:#e9edf2; --side-muted:#aab3bf; --orange:#f5821f;
+  --ink:#2c3e50; --ink2:#4a5a6a; --muted:#7b8794; --line:#e3e6ea; --bg:#f4f5f6;
+  --teal:#2e6f6c; --teal2:#2f8f88; --teal-tint:#eaf4f3;
+  --new:#7cb342; --testbadge:#9e9e9e; --partial:#ef8f2b;
+  --warn:#b7791f; --warn-tint:#fff7e8; --warn-line:#f2dcae;
+  --proposed:#7c3aed;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Nunito Sans","Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);font-size:14px}
+button{font:inherit;cursor:pointer}
+a{color:var(--teal2);text-decoration:none;cursor:pointer}
+a:hover{text-decoration:underline}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* Prototype controls (not product UI) */
+.proto{position:sticky;top:0;z-index:60;display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#1d2229;color:#cfd6de;padding:7px 14px;font-size:12px}
+.proto b{color:#fff;font-weight:700;margin-right:6px}
+.proto button{background:#2c333c;color:#e6eaee;border:1px solid #444d58;border-radius:4px;padding:4px 9px;font-size:12px}
+.proto button.on{background:#4a3a7a;border-color:#7c3aed}
+.proto label{display:flex;gap:5px;align-items:center}
+.proto .sep{width:1px;height:18px;background:#444d58}
+
+/* Proposed-change highlight */
+body.showprop .prop{outline:2px dashed var(--proposed);outline-offset:3px;position:relative}
+body.showprop .panel.prop,body.showprop .pill.prop{position:fixed}
+body.showprop .panel.prop{outline-offset:-3px}
+body.showprop .prop::after{content:"Proposed";position:absolute;top:-11px;right:6px;background:var(--proposed);color:#fff;font-size:10px;font-weight:700;letter-spacing:.04em;padding:1px 6px;border-radius:3px;pointer-events:none}
+
+/* App shell */
+.app{display:grid;grid-template-columns:224px 1fr;min-height:calc(100vh - 34px)}
+.side{background:var(--side);color:var(--side-fg);padding-bottom:30px}
+.logo{display:flex;align-items:center;gap:14px;height:76px;padding:0 14px}
+.logo .dots{display:grid;grid-template-columns:repeat(3,4px);gap:3px}
+.logo .dots i{width:4px;height:4px;border-radius:50%;background:#fff;display:block}
+.logo .word{color:var(--orange);font-weight:800;font-size:26px;letter-spacing:-.02em}
+.nav{list-style:none;margin:0;padding:0}
+.nav li{display:flex;align-items:center;gap:12px;padding:11px 12px;font-size:14px;color:var(--side-fg)}
+.nav li .caret{margin-left:auto;width:0;height:0;border:5px solid transparent;border-top-color:#fff;border-bottom:0}
+.side hr{border:0;border-top:1px solid #56606e;margin:14px 12px}
+.side .lbl{font-size:11px;letter-spacing:.12em;color:var(--side-muted);padding:6px 4px;font-weight:700}
+
+.main{display:flex;flex-direction:column;min-width:0}
+.head{background:#fff;border-bottom:1px solid var(--line)}
+.head .top{display:flex;align-items:center;padding:16px 60px 8px}
+.head h1{font-size:25px;font-weight:600;margin:0}
+.head .tools{margin-left:auto;display:flex;align-items:center;gap:18px;color:var(--ink)}
+.avatar{width:30px;height:30px;border-radius:50%;background:#2c3e50;color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}
+.tabs{display:flex;gap:4px;padding:0 50px;position:relative}
+.tab{background:none;border:0;padding:12px 10px 13px;font-size:12.5px;letter-spacing:.06em;color:var(--ink2);border-bottom:3px solid transparent}
+.tab.on{color:var(--teal2);border-bottom-color:var(--teal2)}
+.tab .dd{display:inline-block;margin-left:5px;border:4px solid transparent;border-top-color:currentColor;border-bottom:0;vertical-align:2px}
+.menu{position:absolute;top:46px;left:285px;background:#fff;border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.12);border-radius:3px;display:none;grid-template-columns:auto auto;gap:6px 40px;padding:14px 20px 16px;z-index:30}
+.menu.open{display:grid}
+.menu h6{margin:0 0 6px;font-size:12px;letter-spacing:.04em;color:var(--ink2);font-weight:600}
+.menu a{display:flex;align-items:center;gap:8px;padding:6px 2px;font-size:14px;color:var(--teal2)}
+.menu a.cur{font-weight:700}
+.beta{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;color:var(--teal);background:var(--teal-tint);border:1px solid #c7e1de;border-radius:3px;padding:0 5px;line-height:16px}
+
+.content{padding:28px 50px 80px;flex:1}
+.card{background:#fff;border-radius:2px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.btn{background:var(--teal);color:#fff;border:0;border-radius:3px;padding:7px 12px;font-size:13px}
+.btn:hover{background:#255b58}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid #c9ced4}
+.btn.ghost:hover{background:#f4f6f7}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:5px 10px;font-size:12px}
+
+/* Test tab */
+.intro{max-width:1004px;padding:16px 16px 30px}
+.intro p{margin:0 0 20px;font-size:12.5px;color:var(--ink2);line-height:1.5}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;align-items:center}
+.metrics .big{font-size:40px;line-height:1}
+.metrics .mid{font-size:21px;margin-top:4px}
+.metrics .cap{font-size:13px;margin-top:4px}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;max-width:1004px;margin-top:20px}
+.three .card{padding:14px 16px 18px}
+.three h3{margin:0 0 6px;font-size:15px;font-weight:400}
+.three p{margin:0 0 14px;font-size:11.5px;color:var(--ink2);line-height:1.5;min-height:34px}
+.three .c{text-align:center}
+
+/* Modal */
+.scrim{position:fixed;inset:0;background:rgba(40,44,52,.45);display:none;z-index:40;overflow:auto}
+.scrim.open{display:block}
+.modal{background:#fff;width:560px;margin:40px auto 40px;margin-left:calc(50% - 170px);padding:28px 38px 22px;border-radius:2px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.modal h2{font-weight:400;font-size:24px;margin:0 0 22px;display:flex;align-items:center;gap:10px}
+.mtabs{display:flex;border-bottom:1px solid var(--line);margin-bottom:16px}
+.mtab{background:none;border:1px solid transparent;border-bottom:0;padding:8px 12px;font-size:12px;color:var(--teal2);margin-bottom:-1px}
+.mtab.on{border-color:var(--line);background:#fff;color:var(--ink);border-radius:2px 2px 0 0}
+.frow{display:grid;grid-template-columns:130px 1fr;gap:14px;align-items:start;margin-bottom:14px}
+.frow>label:first-child{text-align:right;font-size:14px;padding-top:6px}
+.inp,.ta,select{width:100%;border:1px solid #cfd4da;border-radius:2px;padding:6px 8px;font:inherit;font-size:12.5px;color:var(--ink);background:#fff}
+.ta{min-height:64px;resize:vertical}
+.linkbox{display:flex}
+.linkbox .inp{border-right:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.linkbox button{background:var(--teal);color:#fff;border:0;padding:0 8px;border-radius:0 2px 2px 0}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;margin:7px 0}
+.chk input{margin:2px 0 0;accent-color:var(--teal)}
+.chk small{display:block;color:var(--muted);font-size:11.5px;margin-top:2px;line-height:1.45}
+.apopt{margin-top:14px;padding:12px 12px 10px;border:1px solid #cfe3e0;background:#f6fbfa;border-radius:4px}
+.apopt .t{display:flex;align-items:center;gap:6px;font-weight:700;color:var(--teal)}
+.mfoot{display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--line);margin-top:18px;padding-top:14px}
+.mfoot .left{margin-right:auto}
+.hint{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+.radio{display:flex;flex-direction:column;gap:6px;font-size:12.5px}
+.radio label{display:flex;gap:7px;align-items:center}
+.radio input{accent-color:var(--teal)}
+details.more{border:1px solid var(--line);border-radius:3px;margin:4px 0 14px}
+details.more>summary{list-style:none;padding:9px 12px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
+details.more>summary::-webkit-details-marker{display:none}
+details.more[open]>summary .chev{transform:rotate(90deg)}
+details.more .body{padding:4px 12px 4px}
+.regions{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px}
+.regions label{display:flex;gap:5px;align-items:center}
+.ages{display:flex;gap:8px;align-items:center;font-size:12.5px}
+.ages select{width:auto}
+.note{font-size:11.5px;color:var(--muted);background:#f7f8f9;border-radius:3px;padding:8px 10px;line-height:1.5;margin-top:4px}
+pre.prompt{background:#1f2630;color:#e6edf3;font:12px/1.55 Consolas,"Cascadia Mono",monospace;padding:12px;border-radius:4px;white-space:pre-wrap;margin:8px 0 0;max-height:240px;overflow:auto}
+.copyrow{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+
+/* Side panel */
+.panel{position:fixed;top:34px;right:0;bottom:0;width:384px;background:#fff;border-left:1px solid var(--line);box-shadow:-10px 0 30px rgba(0,0,0,.08);z-index:35;display:none;flex-direction:column}
+.panel.open{display:flex}
+.phead{display:flex;align-items:center;gap:10px;padding:16px 16px 14px;border-bottom:1px solid var(--line)}
+.spark{width:28px;height:28px;border-radius:7px;background:var(--teal);color:#fff;display:grid;place-items:center}
+.spark svg.i{width:16px;height:16px}
+.phead .tt{font-weight:700;font-size:15px}
+.phead .st{font-size:12px;color:var(--muted)}
+.iconbtn{background:none;border:0;color:var(--muted);padding:5px;border-radius:4px;display:grid;place-items:center}
+.iconbtn:hover{background:#f0f2f4;color:var(--ink)}
+.pbody{padding:14px 18px;overflow:auto;flex:1}
+.eta{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink2);margin-bottom:6px}
+.bar{height:6px;background:#e9edf0;border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--teal2);width:0;transition:width .4s}
+.steps{list-style:none;margin:16px 0 0;padding:0}
+.steps li{display:grid;grid-template-columns:22px 1fr;gap:8px;padding:8px 0}
+.steps .ic{width:18px;height:18px;margin-top:1px;color:#b8c0c8}
+.steps li.run .ic{color:var(--teal2)}
+.steps li.done .ic{color:var(--teal2)}
+.steps li.warn .ic{color:var(--warn)}
+.steps .n{font-size:13.5px;font-weight:600;color:var(--ink)}
+.steps li.pend .n{color:#9aa4ae;font-weight:500}
+.steps .d{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.45}
+.spin{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.live{margin-top:6px;border-left:2px solid #e3e6ea;padding-left:8px}
+.live div{font-size:11.5px;color:var(--ink2);padding:1px 0;animation:fadein .3s}
+@keyframes fadein{from{opacity:0;transform:translateY(3px)}to{opacity:1}}
+.pfoot{border-top:1px solid var(--line);padding:12px 18px 16px;font-size:12px;color:var(--muted);line-height:1.5}
+.summary{background:var(--teal-tint);border:1px solid #c7e1de;border-radius:6px;padding:12px;margin-top:14px}
+.summary b{display:block;font-size:14px;margin-bottom:4px}
+.summary .w{color:var(--warn);font-weight:700}
+.pill{position:fixed;right:18px;bottom:18px;z-index:36;display:none;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.15);border-radius:24px;padding:8px 14px 8px 8px;cursor:pointer}
+.pill.open{display:flex}
+.pill .spark{width:26px;height:26px;border-radius:50%}
+.pill .txt{font-size:12.5px;font-weight:600}
+.pill .bar{width:90px;height:4px}
+
+/* Results pages */
+.ptitle{display:flex;align-items:center;gap:10px;margin:0 0 6px}
+.ptitle h2{font-size:30px;font-weight:400;margin:0}
+.sub{color:var(--ink2);font-size:13px;margin:0 0 20px}
+.resp{padding:22px 26px}
+.resp .count{font-size:30px;margin:0 0 18px}
+.resp .counts{font-size:13px;margin-bottom:20px}
+table.t{border-collapse:collapse;width:100%;font-size:13.5px}
+table.t th{text-align:left;font-weight:400;color:var(--ink2);padding:10px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.t td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.badge{display:inline-block;font-size:11px;font-weight:700;color:#fff;border-radius:2px;padding:1px 6px;margin-right:3px}
+.b-new{background:var(--new)} .b-test{background:var(--testbadge)} .b-part{background:var(--partial)}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#f2f4f6;border:1px solid #e2e6ea;border-radius:12px;padding:2px 9px;font-size:12px;color:var(--ink);white-space:nowrap}
+.chip .spk{color:var(--teal);display:flex}
+.chip .spk svg.i{width:13px;height:13px}
+.cmt{color:var(--muted);display:inline-flex;align-items:center;gap:3px;font-size:12px;margin-left:6px;position:relative;cursor:help}
+.cmt svg.i{width:15px;height:15px}
+.cmt .tip{display:none;position:absolute;left:22px;top:-6px;width:280px;background:#fff;border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.14);border-radius:4px;padding:10px 12px;color:var(--ink);font-size:12px;line-height:1.5;white-space:normal;z-index:20}
+.cmt:hover .tip{display:block}
+.tip .who{font-weight:700;display:flex;gap:6px;align-items:center;margin-bottom:4px;color:var(--teal)}
+.empty{padding:50px 20px;text-align:center;color:var(--ink2)}
+.empty h3{font-weight:400;font-size:20px;margin:0 0 8px;color:var(--ink)}
+
+.runbar{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.runbar .meta{font-size:13px;color:var(--ink2)}
+.runbar .meta b{color:var(--ink)}
+.runbar .acts{margin-left:auto;display:flex;gap:8px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}
+.tile{padding:16px 20px;border-right:1px solid var(--line)}
+.tile:last-child{border-right:0}
+.tile .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.tile .v{font-size:28px;margin-top:4px}
+.tile .s{font-size:12px;color:var(--ink2);margin-top:2px}
+.sec{padding:18px 20px;border-bottom:1px solid var(--line)}
+.sec:last-child{border-bottom:0}
+.sec h3{font-size:16px;font-weight:600;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.finding{display:grid;grid-template-columns:20px 1fr;gap:8px;padding:8px 10px;border-radius:4px;margin-bottom:6px;font-size:13px;line-height:1.5}
+.finding.high{background:var(--warn-tint);border:1px solid var(--warn-line)}
+.finding.high svg.i{color:var(--warn)}
+.finding.low{border:1px solid var(--line)}
+.finding.low svg.i{color:var(--muted)}
+.finding b{display:block}
+.seg{display:inline-flex;border:1px solid #cfd4da;border-radius:3px;overflow:hidden;margin-left:auto}
+.seg button{background:#fff;border:0;border-right:1px solid #cfd4da;padding:4px 10px;font-size:12px;color:var(--ink2)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--teal);color:#fff}
+.grp{font-size:11px;font-weight:700;border-radius:10px;padding:1px 8px}
+.g-core{background:#e6f0ff;color:#2d5aa0}
+.g-adj{background:#f3eafd;color:#6b3fa0}
+.g-so{background:#fdf0e3;color:#9a5a12}
+tr.prow{cursor:pointer}
+tr.prow:hover td{background:#fafbfc}
+tr.detail td{background:#fafbfc;padding:12px 16px 16px 46px}
+.kv{display:grid;grid-template-columns:repeat(4,auto);gap:4px 28px;justify-content:start;font-size:12.5px}
+.kv span{color:var(--muted)}
+.quote{margin:10px 0 0;font-size:13px;color:var(--ink);border-left:3px solid #c7e1de;padding-left:10px;line-height:1.5}
+.mono{font-family:Consolas,"Cascadia Mono",monospace;font-size:11.5px;color:var(--muted)}
+.leftover{display:flex;gap:12px;align-items:center;font-size:13px;padding:10px 12px;border:1px dashed #e0b98a;border-radius:4px;background:#fffaf3}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#24303c;color:#fff;padding:10px 16px;border-radius:4px;font-size:13px;z-index:70;display:none}
+.toast.open{display:block;animation:fadein .2s}
+</style>
+</head>
+<body class="showprop">
+
+<div class="proto">
+  <b>Prototype controls</b> not part of the product
+  <span class="sep"></span>
+  <button data-go="test">Test tab</button>
+  <button data-go="ap">Results: Audience Preview</button>
+  <button data-go="ir">Results: Individual Responses</button>
+  <span class="sep"></span>
+  <button id="restart">Restart</button>
+  <button id="speed">Speed: 1x</button>
+  <span class="sep"></span>
+  <label><input type="checkbox" id="showprop" checked> Highlight proposed changes</label>
+</div>
+
+<div class="app">
+  <aside class="side">
+    <div class="logo"><span class="dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="word">Alchemer</span></div>
+    <ul class="nav"><li><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg> Survey</li></ul>
+    <hr>
+    <div class="lbl">TOOLS</div>
+    <ul class="nav">
+      <li><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Audience</li>
+      <li><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg> Design Library <span class="caret"></span></li>
+      <li><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg> Research Library <span class="caret"></span></li>
+      <li><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg> Integrations <span class="caret"></span></li>
+    </ul>
+    <hr>
+    <div class="lbl">ACCOUNT</div>
+    <ul class="nav">
+      <li><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg> Account <span class="caret"></span></li>
+      <li><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> Support Center</li>
+      <li><span style="display:inline-grid;place-items:center;width:20px;height:18px;border:1.6px solid currentColor;border-radius:2px;font-size:9px;font-weight:800">Au</span> Alchemer University</li>
+      <li><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg> Security <span class="caret"></span></li>
+    </ul>
+  </aside>
+
+  <div class="main">
+    <div class="head">
+      <div class="top">
+        <h1>Coffee Purchasing Habits Survey</h1>
+        <div class="tools"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg> <span>Help</span> <span class="avatar">P</span></div>
+      </div>
+      <nav class="tabs">
+        <button class="tab">BUILD</button>
+        <button class="tab">STYLE</button>
+        <button class="tab" id="tab-test">TEST</button>
+        <button class="tab">SHARE</button>
+        <button class="tab" id="tab-results">RESULTS<span class="dd"></span></button>
+        <button class="tab">TOOLS<span class="dd"></span></button>
+        <div class="menu" id="menu">
+          <div>
+            <h6>REPORTS &amp; EXPORTS</h6>
+            <a data-go="ir" id="m-ir">Individual Responses</a>
+            <a data-go="ap" id="m-ap" class="prop">Audience Preview <span class="beta">BETA</span></a>
+            <a>Reports</a>
+            <a>Exports</a>
+          </div>
+          <div>
+            <h6>DATA PREPARATION</h6>
+            <a>Analyze Open Text Answers</a>
+            <a>Quarantine Bad Responses</a>
+            <a>Edit Reporting Values &amp; Labels</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <!-- TEST TAB -->
+    <section class="content" id="v-test">
+      <div class="card intro">
+        <p>We've run an inconceivable number of surveys &amp; forms and have learned a thing or two about what makes a successful project. Part of making your project great is making sure that your participants can and will participate. Form Length, Fatigue, and Accessibility are all measures of how easy it is for your participant to make it through.</p>
+        <div class="metrics">
+          <div><div class="big">4</div><div class="mid">minutes</div><div class="cap">Estimated Length</div></div>
+          <div><svg viewBox="0 0 120 66" width="120" height="66"><path d="M14.0 58.0 A46 46 0 0 1 37.0 18.2" stroke="#2f8f88" stroke-width="16" fill="none"/><path d="M37.0 18.2 A46 46 0 0 1 83.0 18.2" stroke="#f39c27" stroke-width="16" fill="none"/><path d="M83.0 18.2 A46 46 0 0 1 106.0 58.0" stroke="#e5534b" stroke-width="16" fill="none"/><line x1="60" y1="58" x2="24.7" y2="39.2" stroke="#2c3e50" stroke-width="4" stroke-linecap="round"/></svg><div class="cap">Fatigue Score</div></div>
+          <div><svg viewBox="0 0 120 66" width="120" height="66"><path d="M14.0 58.0 A46 46 0 0 1 37.0 18.2" stroke="#e5534b" stroke-width="16" fill="none"/><path d="M37.0 18.2 A46 46 0 0 1 83.0 18.2" stroke="#f39c27" stroke-width="16" fill="none"/><path d="M83.0 18.2 A46 46 0 0 1 106.0 58.0" stroke="#2f8f88" stroke-width="16" fill="none"/><line x1="60" y1="58" x2="99.9" y2="55.2" stroke="#2c3e50" stroke-width="4" stroke-linecap="round"/></svg><div class="cap">Accessibility</div></div>
+        </div>
+      </div>
+      <div class="three">
+        <div class="card"><h3>Automatically Generate Test Data</h3><p>Testing takes time. Enlist our army of form filling robots to help you test.</p><div class="c"><button class="btn">Generate Test Responses</button></div></div>
+        <div class="card"><h3>Manually Test Your Survey</h3><p>Experience the thrill of taking your own Survey.</p><div class="c"><button class="btn">New Test Response</button></div></div>
+        <div class="card"><h3>Invite Others to Help You Test</h3><p>Everyone's a critic. Get some feedback from others to improve your survey.</p><div class="c"><button class="btn" id="open-invite">Invite Others to Test</button></div></div>
+      </div>
+    </section>
+
+    <!-- INDIVIDUAL RESPONSES -->
+    <section class="content" id="v-ir" hidden>
+      <div class="ptitle"><h2>Individual Responses</h2></div>
+      <div class="card resp" id="ir-body"></div>
+    </section>
+
+    <!-- AUDIENCE PREVIEW RESULTS -->
+    <section class="content" id="v-ap" hidden>
+      <div class="prop" style="display:block">
+        <div class="ptitle"><h2>Audience Preview</h2><span class="beta">BETA</span></div>
+        <p class="sub">AI personas take your survey through its test link, so you can check logic, preview reports and spot design problems before launch. Responses are marked as test data and are never research data.</p>
+        <div class="card" id="ap-body"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- INVITE MODAL -->
+<div class="scrim" id="scrim">
+  <div class="modal" id="modal"></div>
+</div>
+
+<!-- SIDE PANEL -->
+<aside class="panel prop" id="panel">
+  <div class="phead">
+    <div class="spark"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg></div>
+    <div><div class="tt">Audience Preview</div><div class="st" id="p-status">Starting</div></div>
+    <div style="margin-left:auto;display:flex;gap:2px">
+      <button class="iconbtn" id="p-min" title="Minimize"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M5 12h14"/></svg></button>
+    </div>
+  </div>
+  <div class="pbody">
+    <div class="eta"><span id="p-eta">Estimating time</span><span id="p-count">0 of 20</span></div>
+    <div class="bar"><i id="p-bar"></i></div>
+    <ul class="steps" id="p-steps"></ul>
+    <div id="p-summary"></div>
+  </div>
+  <div class="pfoot" id="p-foot">You can keep working or minimize this panel. The run continues in the background, and we'll email you when it's done. Results appear in Results, then Audience Preview.</div>
+</aside>
+<div class="pill prop" id="pill">
+  <div class="spark"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg></div>
+  <div><div class="txt" id="pill-txt">Audience Preview</div><div class="bar"><i id="pill-bar"></i></div></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = [{"rid": 9, "pid": "p01", "group": "core", "age": 29, "gender": "Female", "location": "Brooklyn, NY", "occupation": "UX designer", "attitude": "Daily Starbucks app user; likes the rewards, irritated by steady price increases.", "status": "complete", "start": "2026-10-21T13:59:35", "end": "2026-10-21T13:59:51", "duration": 15.6, "screener": "Yes", "vendor": "Starbucks", "nps": "7", "satisfaction": "Neutral", "why": "Mostly the app. I order on my walk to the subway and it's ready when I get there, and the rewards add up. The coffee itself is fine, not amazing.", "order": "Mobile app pickup"}, {"rid": 10, "pid": "s01", "group": "screen_out", "age": 57, "gender": "Male", "location": "Lincoln, NE", "occupation": "Farmer", "attitude": "Brews coffee at home every morning; hasn't bought coffee out in months.", "status": "partial", "start": "2026-10-21T14:00:08", "end": "2026-10-21T14:00:14", "duration": 5.8, "screener": "No", "vendor": null, "nps": null, "satisfaction": null, "why": null, "order": null}, {"rid": 11, "pid": "p02", "group": "core", "age": 41, "gender": "Male", "location": "Worcester, MA", "occupation": "HVAC technician", "attitude": "Dunkin' loyalist; wants it quick and consistent on the way to job sites.", "status": "complete", "start": "2026-10-21T14:00:21", "end": "2026-10-21T14:00:36", "duration": 15.1, "screener": "Yes", "vendor": "Dunkin'", "nps": "9", "satisfaction": "Satisfied", "why": "Its on my way to jobs and its quick. Coffee tastes the same every time.", "order": "Drive-thru"}, {"rid": 12, "pid": "p03", "group": "core", "age": 34, "gender": "Female", "location": "Columbus, OH", "occupation": "Registered nurse", "attitude": "Uses a Starbucks drive-thru before shifts; speed matters more than anything.", "status": "complete", "start": "2026-10-21T14:00:50", "end": "2026-10-21T14:01:05", "duration": 15.0, "screener": "Yes", "vendor": "Starbucks", "nps": "8", "satisfaction": "Satisfied", "why": "There's one with a drive-thru right off my route to the hospital and it opens early. I get the same thing every time so I know what I'm getting.", "order": "Drive-thru"}, {"rid": 13, "pid": "p04", "group": "core", "age": 52, "gender": "Male", "location": "Houston, TX", "occupation": "Regional sales manager", "attitude": "Long-time Starbucks customer who thinks quality has slipped; open to switching.", "status": "complete", "start": "2026-10-21T14:01:14", "end": "2026-10-21T14:01:30", "duration": 16.0, "screener": "Yes", "vendor": "Starbucks", "nps": "4", "satisfaction": "Dissatisfied", "why": "Convenience. There's one near the office and one by my house. Not because I think it's great.", "order": "Walk-in / counter order"}, {"rid": 14, "pid": "p05", "group": "core", "age": 26, "gender": "Female", "location": "Phoenix, AZ", "occupation": "Dental hygienist", "attitude": "Enthusiastic Dutch Bros regular; loves sweet drinks and the friendly staff.", "status": "complete", "start": "2026-10-21T14:01:41", "end": "2026-10-21T14:01:58", "duration": 16.9, "screener": "Yes", "vendor": "Dutch Bros", "nps": "10", "satisfaction": "Very satisfied", "why": "The drinks are really good and the people there are always so nice. I go almost every day.", "order": "Drive-thru"}, {"rid": 15, "pid": "p06", "group": "core", "age": 38, "gender": "Male", "location": "Atlanta, GA", "occupation": "Software engineer", "attitude": "Prefers independent cafés for taste and supporting small business; mildly anti-chain.", "status": "complete", "start": "2026-10-21T14:02:09", "end": "2026-10-21T14:02:25", "duration": 16.6, "screener": "Yes", "vendor": "Local café", "nps": "9", "satisfaction": "Satisfied", "why": "Better coffee, and I'd rather my money go to a small business. They roast their own beans and know what they're doing.", "order": "Walk-in / counter order"}, {"rid": 16, "pid": "p07", "group": "core", "age": 45, "gender": "Female", "location": "Charlotte, NC", "occupation": "School administrator", "attitude": "Goes to Starbucks out of habit; indifferent, not attached to any brand.", "status": "complete", "start": "2026-10-21T14:02:40", "end": "2026-10-21T14:02:56", "duration": 16.5, "screener": "Yes", "vendor": "Starbucks", "nps": "6", "satisfaction": "Neutral", "why": "Habit mostly. It's close to the school.", "order": "Drive-thru"}, {"rid": 17, "pid": "p08", "group": "core", "age": 31, "gender": "Male", "location": "Denver, CO", "occupation": "Freelance photographer", "attitude": "Works from local cafés; values wifi and space, watches spending.", "status": "complete", "start": "2026-10-21T14:03:10", "end": "2026-10-21T14:03:27", "duration": 16.3, "screener": "Yes", "vendor": "Local café", "nps": "8", "satisfaction": "Satisfied", "why": "I work out of a couple of cafés during the week. Good wifi, decent drip coffee, and they don't mind if I stay a few hours.", "order": "Walk-in / counter order"}, {"rid": 18, "pid": "p09", "group": "core", "age": 23, "gender": "Female", "location": "Minneapolis, MN", "occupation": "Marketing coordinator", "attitude": "Enjoys Starbucks seasonal drinks and app rewards; generally positive.", "status": "complete", "start": "2026-10-21T14:03:42", "end": "2026-10-21T14:03:57", "duration": 15.2, "screener": "Yes", "vendor": "Starbucks", "nps": "8", "satisfaction": "Satisfied", "why": "I like the seasonal drinks and the app makes ordering easy. I also have a lot of rewards saved up.", "order": "Mobile app pickup"}, {"rid": 19, "pid": "p10", "group": "core", "age": 58, "gender": "Male", "location": "Tampa, FL", "occupation": "Insurance claims adjuster", "attitude": "Buys McDonald's coffee because it's cheap; sees no difference between brands.", "status": "complete", "start": "2026-10-21T14:04:05", "end": "2026-10-21T14:04:21", "duration": 16.2, "screener": "Yes", "vendor": "McDonald's", "nps": "5", "satisfaction": "Satisfied", "why": "Cheap and it's fine. Coffee is coffee.", "order": "Drive-thru"}, {"rid": 20, "pid": "p11", "group": "core", "age": 36, "gender": "Female", "location": "Seattle, WA", "occupation": "Project manager", "attitude": "Loyal to a neighborhood espresso shop; cares about taste and sourcing.", "status": "complete", "start": "2026-10-21T14:04:30", "end": "2026-10-21T14:04:46", "duration": 15.8, "screener": "Yes", "vendor": "Local café", "nps": "9", "satisfaction": "Very satisfied", "why": "There's a neighborhood shop two blocks from my house that does great espresso. I know the baristas and it's a nicer way to start the day than a chain.", "order": "Walk-in / counter order"}, {"rid": 21, "pid": "p12", "group": "core", "age": 47, "gender": "Male", "location": "Philadelphia, PA", "occupation": "City bus operator", "attitude": "Gets Wawa coffee near the depot; price and convenience first.", "status": "complete", "start": "2026-10-21T14:05:01", "end": "2026-10-21T14:05:15", "duration": 14.9, "screener": "Yes", "vendor": "Other", "nps": "8", "satisfaction": "Satisfied", "why": "Wawa. Its right by the depot, the coffee is cheap and I can grab something to eat too.", "order": "Walk-in / counter order"}, {"rid": 22, "pid": "p13", "group": "core", "age": 28, "gender": "Male", "location": "Nashville, TN", "occupation": "Bartender", "attitude": "Cost-conscious Dunkin' customer, frustrated by rising prices and fewer app deals.", "status": "complete", "start": "2026-10-21T14:05:24", "end": "2026-10-21T14:05:40", "duration": 16.9, "screener": "Yes", "vendor": "Dunkin'", "nps": "3", "satisfaction": "Dissatisfied", "why": "Cheaper than Starbucks.", "order": "Walk-in / counter order"}, {"rid": 23, "pid": "p14", "group": "core", "age": 33, "gender": "Female", "location": "Chicago, IL", "occupation": "Staff accountant (CPA)", "attitude": "Uses the Starbucks in her office building; neutral, it's simply the easiest option.", "status": "complete", "start": "2026-10-21T14:05:55", "end": "2026-10-21T14:06:12", "duration": 17.0, "screener": "Yes", "vendor": "Starbucks", "nps": "6", "satisfaction": "Neutral", "why": "It's in the lobby of my building so it's the easiest option.", "order": "Mobile app pickup"}, {"rid": 24, "pid": "p15", "group": "adjacent", "age": 67, "gender": "Female", "location": "Toledo, OH", "occupation": "Retired teacher", "attitude": "Meets friends at Tim Hortons after morning walks; social habit, happy with value.", "status": "complete", "start": "2026-10-21T14:06:23", "end": "2026-10-21T14:06:38", "duration": 14.8, "screener": "Yes", "vendor": "Tim Hortons", "nps": "7", "satisfaction": "Satisfied", "why": "A group of us meet there a couple of mornings a week after our walk. The coffee is reasonably priced and nobody rushes you out.", "order": "Walk-in / counter order"}, {"rid": 25, "pid": "p16", "group": "adjacent", "age": 19, "gender": "Male", "location": "Gainesville, FL", "occupation": "College student", "attitude": "Occasional buyer on a tight budget; goes where it's cheapest on campus.", "status": "complete", "start": "2026-10-21T14:06:47", "end": "2026-10-21T14:07:03", "duration": 16.2, "screener": "Yes", "vendor": "Dunkin'", "nps": "6", "satisfaction": "Neutral", "why": "cheaper and theres one on campus", "order": "Mobile app pickup"}, {"rid": 26, "pid": "p17", "group": "adjacent", "age": 17, "gender": "Female", "location": "San Diego, CA", "occupation": "High school student", "attitude": "Goes to Starbucks with friends after school for sweet blended drinks; doesn't know household income.", "status": "complete", "start": "2026-10-21T14:07:14", "end": "2026-10-21T14:07:29", "duration": 15.5, "screener": "Yes", "vendor": "Starbucks", "nps": "9", "satisfaction": "Satisfied", "why": "My friends and I go after school. I usually get a frappuccino.", "order": "Walk-in / counter order"}, {"rid": 27, "pid": "p18", "group": "adjacent", "age": 44, "gender": "Non-binary", "location": "Portland, ME", "occupation": "Between jobs (former office manager)", "attitude": "Cutting back on buying coffee to save money; still visits a local café now and then.", "status": "complete", "start": "2026-10-21T14:07:40", "end": "2026-10-21T14:07:56", "duration": 15.7, "screener": "Yes", "vendor": "Local café", "nps": "7", "satisfaction": "Neutral", "why": "I like the people who run it. I go less than I used to because money is tight right now.", "order": "Walk-in / counter order"}, {"rid": 28, "pid": "p19", "group": "adjacent", "age": 62, "gender": "Male", "location": "Birmingham, AL", "occupation": "Self-employed contractor", "attitude": "Grabs McDonald's coffee at the drive-thru; private about money, low engagement.", "status": "complete", "start": "2026-10-21T14:08:11", "end": "2026-10-21T14:08:26", "duration": 15.3, "screener": "Yes", "vendor": "McDonald's", "nps": "7", "satisfaction": "Satisfied", "why": "Close by and cheap", "order": "Drive-thru"}, {"rid": 29, "pid": "p20", "group": "adjacent", "age": 39, "gender": "Female", "location": "Boise, ID", "occupation": "Stay-at-home parent", "attitude": "Dutch Bros drive-thru with three kids in the car; it's a treat, but cost adds up.", "status": "complete", "start": "2026-10-21T14:08:39", "end": "2026-10-21T14:08:55", "duration": 16.1, "screener": "Yes", "vendor": "Dutch Bros", "nps": "8", "satisfaction": "Satisfied", "why": "The kids love it and it's an easy treat when we're running errands. I like their cold brew, and the staff is great with my kids.", "order": "Drive-thru"}];
+const LINK = "https://survey.alchemer.com/collab/9072536/Coffee-Purchasing-Habits-Survey";
+const I = {
+  sparkles:'<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  circle:'<circle cx="12" cy="12" r="9"/>',
+  loader:'<path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
+  warn:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  msg:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  copy:'<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  back:'<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  chevR:'<path d="m9 18 6-6-6-6"/>',
+  chevD:'<path d="m6 9 6 6 6-6"/>',
+  ext:'<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3"/>',
+  file:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+  trash:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+};
+const svg = (k, cls='') => `<svg class="i ${cls}" viewBox="0 0 24 24">${I[k]}</svg>`;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- state ---------- */
+const S = { view:'test', speed:1, cfg:null, run:null, panel:'closed', expanded:new Set(), seg:'all' };
+const defaults = () => ({ n:20, audience:'infer', audText:'', regions:['Northeast','Midwest','South','West'], ageMin:'18', ageMax:'65+', sentiment:'Realistic', openText:'Mostly short', screenout:false, comments:true, notify:'progress' });
+
+/* ---------- views ---------- */
+function go(v){
+  S.view = v;
+  ['test','ir','ap'].forEach(k => $('#v-'+k).hidden = k !== v);
+  $('#tab-test').classList.toggle('on', v==='test');
+  $('#tab-results').classList.toggle('on', v!=='test');
+  $('#menu').classList.remove('open');
+  $('#m-ir').classList.toggle('cur', v==='ir');
+  $('#m-ap').classList.toggle('cur', v==='ap');
+  if (v==='ir') renderIR();
+  if (v==='ap') renderAP();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('[data-go]').forEach(el => el.addEventListener('click', () => go(el.dataset.go)));
+$('#tab-test').onclick = () => go('test');
+$('#tab-results').onclick = e => { e.stopPropagation(); $('#menu').classList.toggle('open'); };
+document.addEventListener('click', e => { if (!e.target.closest('#menu')) $('#menu').classList.remove('open'); });
+$('#showprop').onchange = e => document.body.classList.toggle('showprop', e.target.checked);
+$('#speed').onclick = () => { S.speed = S.speed===1 ? 4 : 1; $('#speed').textContent = 'Speed: '+S.speed+'x'; $('#speed').classList.toggle('on', S.speed>1); };
+$('#restart').onclick = () => location.reload();
+
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('open'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('open'),2600); }
+
+/* ---------- invite modal ---------- */
+let M = { tab:'other', ap:false, step:'invite' };
+$('#open-invite').onclick = () => { M = { tab:'email', ap:false, step:'invite' }; S.cfg = defaults(); openModal(); };
+function openModal(){ $('#scrim').classList.add('open'); renderModal(); }
+function closeModal(){ $('#scrim').classList.remove('open'); }
+$('#scrim').addEventListener('click', e => { if (e.target.id==='scrim') closeModal(); });
+
+function renderModal(){
+  const m = $('#modal');
+  if (M.step==='setup') return renderSetup(m);
+  const email = `
+    <div class="frow"><label>Email Subject</label><input class="inp" value="Request to Review - Coffee Purchasing Habits Survey"></div>
+    <div class="frow"><label>Email Message</label><textarea class="ta">Please review and test my survey: Coffee Purchasing Habits Survey</textarea></div>
+    <div class="frow"><label>Send Invite To</label><textarea class="ta" placeholder="Email Recipients (1 per line)"></textarea></div>
+    <div class="frow"><label>Comments</label><label class="chk"><input type="checkbox" checked> Allow testers to comment</label></div>
+    <div class="frow"><label>From</label><div><input class="inp" value="productteam@alchemer.com" disabled style="background:#f2f3f4"><label class="chk"><input type="checkbox" checked> Send me email notifications on new comments</label></div></div>`;
+  const other = `
+    <div class="frow"><label>Testing Mode Link</label><div class="linkbox"><input class="inp" value="${LINK}" readonly><button title="Open">${svg('ext')}</button></div></div>
+    <div class="frow"><label></label><div>
+      <label class="chk"><input type="checkbox" checked> Allow testers to comment</label>
+      <label class="chk"><input type="checkbox"> Send me email notifications on new comments</label>
+      <div class="apopt prop">
+        <label class="chk" style="margin:0"><input type="checkbox" id="ap-check" ${M.ap?'checked':''}>
+          <span><span class="t">${svg('sparkles')} Launch Audience Preview AI <span class="beta">BETA</span></span>
+          <small>AI personas that fit your survey's audience take it through this link and submit realistic test responses.</small></span></label>
+      </div>
+    </div></div>`;
+  m.innerHTML = `
+    <h2>Invite Others to Test</h2>
+    <div class="mtabs"><button class="mtab ${M.tab==='email'?'on':''}" data-t="email">Invite by Email</button><button class="mtab ${M.tab==='other'?'on':''}" data-t="other">Invite by Other System</button></div>
+    ${M.tab==='email'?email:other}
+    <div class="mfoot"><button class="btn ghost" id="m-cancel">Cancel</button>
+      ${M.tab==='email' ? '<button class="btn" id="m-send">Send</button>' : (M.ap ? '<button class="btn prop" id="m-next">Continue</button>' : '')}</div>`;
+  m.querySelectorAll('.mtab').forEach(b => b.onclick = () => { M.tab=b.dataset.t; renderModal(); });
+  $('#m-cancel').onclick = closeModal;
+  if ($('#m-send')) $('#m-send').onclick = () => { closeModal(); toast('Invitations sent'); };
+  if ($('#ap-check')) $('#ap-check').onchange = e => { M.ap = e.target.checked; renderModal(); };
+  if ($('#m-next')) $('#m-next').onclick = () => { M.step='setup'; renderModal(); };
+}
+
+function promptText(c){
+  const aud = c.audience==='infer' || !c.audText.trim() ? 'Infer from the survey.' : c.audText.trim();
+  const regs = c.regions.length===4 ? 'All' : (c.regions.join(', ') || 'None selected');
+  return [
+    'Follow CLAUDE.md in the audience-preview-prototype repository.',
+    '',
+    'TEST_LINK: '+LINK,
+    'N: '+c.n,
+    'AUDIENCE: '+aud,
+    'REGIONS: '+regs,
+    'AGE RANGE: '+c.ageMin+' to '+c.ageMax,
+    'SENTIMENT MIX: '+({Realistic:'Realistic spread of satisfied, neutral and critical','Mostly positive':'Mostly positive, with a few critical','Mostly critical':'Mostly critical, with a few positive'}[c.sentiment]),
+    'OPEN TEXT: '+({'Mostly short':'Mostly short, a few detailed','Mix':'Even mix of short and detailed','Detailed':'Mostly detailed'}[c.openText]),
+    'SCREEN-OUT TESTERS: '+(c.screenout?'Yes. Add 2 personas who should be disqualified, to check the screener.':'No'),
+    'PERSONA COMMENTS: '+(c.comments?'Yes. On page 1 of each response, post a one-line persona summary as a tester comment.':'No'),
+    'NOTIFY: '+(c.notify==='progress'?'Show progress':'Email when done'),
+  ].join('\n');
+}
+
+function renderSetup(m){
+  const c = S.cfg;
+  const ages = ['18','25','35','45','55','65+'];
+  m.innerHTML = `
+    <h2><button class="iconbtn" id="s-back" title="Back">${svg('back')}</button><span class="spark" style="width:26px;height:26px">${svg('sparkles')}</span> Audience Preview AI <span class="beta">BETA</span></h2>
+    <div class="prop" style="display:block;padding:2px 0">
+    <div class="frow"><label>Responses</label><div><input class="inp" id="s-n" type="number" min="1" max="100" value="${c.n}" style="width:90px"><div class="hint">Up to 100 during beta. Each takes about 30 seconds, so 20 responses take about 10 minutes.</div></div></div>
+    <div class="frow"><label>Audience</label><div class="radio">
+      <label><input type="radio" name="aud" value="infer" ${c.audience==='infer'?'checked':''}> Work it out from my survey</label>
+      <label><input type="radio" name="aud" value="describe" ${c.audience==='describe'?'checked':''}> Describe the audience</label>
+      ${c.audience==='describe'?`<textarea class="ta" id="s-aud" placeholder="For example: HR managers at US companies with 500+ employees">${esc(c.audText)}</textarea>`:''}
+    </div></div>
+    <details class="more" ${S._moreOpen?'open':''} id="s-more"><summary>${svg('chevR','chev')} More options</summary><div class="body">
+      <div class="frow"><label>Regions</label><div class="regions">${['Northeast','Midwest','South','West'].map(r=>`<label><input type="checkbox" class="s-reg" value="${r}" ${c.regions.includes(r)?'checked':''}> ${r}</label>`).join('')}</div></div>
+      <div class="frow"><label>Age range</label><div class="ages"><select id="s-amin">${ages.slice(0,-1).map(a=>`<option ${a===c.ageMin?'selected':''}>${a}</option>`).join('')}</select> to <select id="s-amax">${ages.slice(1).map(a=>`<option ${a===c.ageMax?'selected':''}>${a}</option>`).join('')}</select></div></div>
+      <div class="frow"><label>Sentiment mix</label><select id="s-sent">${['Realistic','Mostly positive','Mostly critical'].map(o=>`<option ${o===c.sentiment?'selected':''}>${o}</option>`).join('')}</select></div>
+      <div class="frow"><label>Open-text answers</label><select id="s-ot">${['Mostly short','Mix','Detailed'].map(o=>`<option ${o===c.openText?'selected':''}>${o}</option>`).join('')}</select></div>
+      <div class="frow"><label>Screener check</label><label class="chk"><input type="checkbox" id="s-so" ${c.screenout?'checked':''}><span>Include screen-out testers<small>Adds a few personas who should be disqualified, to check that your screener works.</small></span></label></div>
+    </div></details>
+    <div class="frow"><label>Comments</label><label class="chk"><input type="checkbox" id="s-cm" ${c.comments?'checked':''}><span>Add a persona summary to each response<small>Posted as a tester comment, so you can see at a glance who each "person" was.</small></span></label></div>
+    <div class="frow"><label>When it's done</label><div class="radio">
+      <label><input type="radio" name="nt" value="progress" ${c.notify==='progress'?'checked':''}> Show progress in a side panel</label>
+      <label><input type="radio" name="nt" value="email" ${c.notify==='email'?'checked':''}> Email me when it's done</label>
+    </div></div>
+    <div class="note">Responses are marked as test data and come from fictional personas. They are for testing and previewing reports, not research.</div>
+    <details class="more" style="margin-top:12px" id="s-ins"><summary>${svg('chevR','chev')} View instructions</summary><div class="body">
+      <div class="copyrow"><span>The instructions sent to the Audience Preview agent.</span><button class="btn ghost sm" id="s-copy">${svg('copy')} Copy</button></div>
+      <pre class="prompt" id="s-prompt">${esc(promptText(c))}</pre>
+    </div></details>
+    </div>
+    <div class="mfoot"><button class="btn ghost left" id="s-back2">Back</button><button class="btn ghost" id="s-cancel">Cancel</button><button class="btn" id="s-start">${svg('sparkles')} Start preview</button></div>`;
+  const read = () => {
+    c.n = Math.max(1, Math.min(100, parseInt($('#s-n').value || '20', 10)));
+    c.audience = m.querySelector('input[name=aud]:checked').value;
+    if ($('#s-aud')) c.audText = $('#s-aud').value;
+    c.regions = [...m.querySelectorAll('.s-reg:checked')].map(x => x.value);
+    c.ageMin = $('#s-amin').value; c.ageMax = $('#s-amax').value;
+    c.sentiment = $('#s-sent').value; c.openText = $('#s-ot').value;
+    c.screenout = $('#s-so').checked; c.comments = $('#s-cm').checked;
+    c.notify = m.querySelector('input[name=nt]:checked').value;
+    $('#s-prompt').textContent = promptText(c);
+    $('#s-start').disabled = c.regions.length===0;
+  };
+  m.querySelectorAll('input,select,textarea').forEach(el => el.addEventListener('input', read));
+  m.querySelectorAll('input[name=aud]').forEach(el => el.addEventListener('change', () => { read(); renderSetup(m); }));
+  $('#s-more').addEventListener('toggle', e => S._moreOpen = e.target.open);
+  $('#s-back').onclick = $('#s-back2').onclick = () => { read(); M.step='invite'; renderModal(); };
+  $('#s-cancel').onclick = closeModal;
+  $('#s-copy').onclick = () => { navigator.clipboard && navigator.clipboard.writeText(promptText(c)); toast('Instructions copied'); };
+  $('#s-start').onclick = () => { read(); closeModal(); startRun(); };
+}
+
+/* ---------- run simulation ---------- */
+function stepsFor(c){
+  const n = c.n;
+  return [
+    { n:'Checking test link', d:'Preview / Test View confirmed. Responses will be marked as test data.', t:1500 },
+    { n:'Mapping your survey', d:'4 pages, 16 questions, 1 branch.', t:2500 },
+    { n:'Testing logic paths', d:'2 issues found: the screener does not disqualify, and the drive-thru question always shows.', t:2500, warn:true },
+    { n:'Choosing personas', d:(c.audience==='infer'?'Audience: US adults who buy coffee from shops or drive-thrus. ':'Audience: '+esc(c.audText||'as described')+'. ')+Math.round(n*0.6)+' from the persona bank, '+(n-Math.round(n*0.6))+' new. 70% core, 30% adjacent.', t:2500 },
+    { n:'Writing answers', d:(n*16)+' answers, including '+(n*2)+' open-text responses in each persona\'s voice.', t:3000 },
+    { n:'Running a pilot response', d:'Persona 1 submitted and verified on the thank-you page.', t:2500 },
+    { n:'Submitting responses', d:'Spaced 8 to 15 seconds apart.', t:0, submit:true },
+    { n:'Writing the report', d:'Run log, persona summaries and design findings are ready.', t:1500 },
+  ];
+}
+function startRun(){
+  const c = S.cfg;
+  S.run = { cfg:{...c}, steps:stepsFor(c), i:0, sent:0, live:[], done:false, started:Date.now() };
+  if (c.notify==='progress') openPanel(); else { S.panel='min'; renderPanelState(); toast('Audience Preview started. We\'ll email you when it\'s done.'); }
+  renderSteps(); tick();
+}
+function realMinutesLeft(){
+  const r = S.run, total = r.cfg.n * 0.5 + 1.5;  // ~30 s per response plus setup
+  const frac = progress();
+  return Math.max(0, Math.ceil(total * (1 - frac)));
+}
+function progress(){
+  const r = S.run; if (!r) return 0;
+  const pre = 6, n = r.cfg.n;
+  const units = Math.min(r.i, pre) + (r.i >= 6 ? r.sent : 0) + (r.done ? 1 : 0);
+  return units / (pre + n + 1);
+}
+function tick(){
+  const r = S.run; if (!r || r.done) return;
+  const st = r.steps[r.i];
+  if (st.submit){
+    if (r.sent >= r.cfg.n){ r.i++; renderSteps(); return setTimeout(tick, 400/S.speed); }
+    const p = DATA.filter(x=>x.status==='complete')[r.sent % 20];
+    r.sent++;
+    r.live.unshift(`${r.sent}. ${p.age} ${p.gender[0]}, ${p.location}, ${p.occupation}: complete`);
+    r.live = r.live.slice(0,4);
+    renderSteps();
+    return setTimeout(tick, 700/S.speed);
+  }
+  setTimeout(() => {
+    r.i++;
+    if (r.i >= r.steps.length){ r.done = true; }
+    renderSteps();
+    if (!r.done) tick(); else finish();
+  }, st.t/S.speed);
+}
+function finish(){
+  const r = S.run;
+  if (S.panel==='closed' || S.panel==='min') toast('Audience Preview finished: '+r.cfg.n+' test responses submitted.');
+  renderAPIfOpen();
+}
+function renderSteps(){
+  const r = S.run; if (!r) return;
+  const frac = progress();
+  $('#p-bar').style.width = $('#pill-bar').style.width = (frac*100).toFixed(1)+'%';
+  $('#p-count').textContent = r.sent+' of '+r.cfg.n+' submitted';
+  const mins = realMinutesLeft();
+  $('#p-eta').textContent = r.done ? 'Finished' : (mins<=1 ? 'About 1 minute left' : 'About '+mins+' minutes left');
+  $('#p-status').textContent = r.done ? 'Finished' : 'Running on Coffee Purchasing Habits Survey';
+  $('#pill-txt').textContent = r.done ? 'Audience Preview finished' : 'Audience Preview: '+r.sent+' of '+r.cfg.n;
+  $('#p-steps').innerHTML = r.steps.map((s,k) => {
+    let cls='pend', ic=svg('circle');
+    if (k < r.i){ cls = s.warn?'warn':'done'; ic = s.warn?svg('warn'):svg('check'); }
+    else if (k===r.i && !r.done){ cls='run'; ic=svg('loader','spin'); }
+    const showD = k <= r.i || r.done;
+    const live = s.submit && k===r.i && r.live.length ? `<div class="live">${r.live.map(x=>`<div>${esc(x)}</div>`).join('')}</div>` : '';
+    const d = s.submit && k<r.i ? r.cfg.n+' of '+r.cfg.n+' complete. 0 blocked by bot checks.' : s.d;
+    return `<li class="${cls}"><span class="ic">${ic}</span><div><div class="n">${s.n}${s.submit&&k===r.i&&!r.done?` (${r.sent} of ${r.cfg.n})`:''}</div>${showD?`<div class="d">${d}</div>`:''}${live}</div></li>`;
+  }).join('');
+  $('#p-summary').innerHTML = r.done ? `<div class="summary"><b>${r.cfg.n} test responses submitted</b>
+      Average 16 seconds each. <span class="w">2 high-priority design issues</span> and 8 other findings.
+      1 partial response to delete.<div style="margin-top:10px;display:flex;gap:8px"><button class="btn" id="p-view">View results</button><button class="btn ghost" id="p-close">Close</button></div></div>` : '';
+  $('#p-foot').style.display = r.done ? 'none' : '';
+  if ($('#p-view')) $('#p-view').onclick = () => { S.panel='closed'; renderPanelState(); go('ap'); };
+  if ($('#p-close')) $('#p-close').onclick = () => { S.panel='closed'; renderPanelState(); };
+  renderAPIfOpen();
+}
+function openPanel(){ S.panel='open'; renderPanelState(); }
+function renderPanelState(){
+  $('#panel').classList.toggle('open', S.panel==='open');
+  $('#pill').classList.toggle('open', S.panel==='min');
+}
+$('#p-min').onclick = () => { S.panel='min'; renderPanelState(); };
+$('#pill').onclick = () => openPanel();
+
+/* ---------- results: individual responses ---------- */
+const fmtDate = iso => { const d=new Date(iso); return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}).toLowerCase(); };
+const fmtTime = iso => new Date(iso).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'}).toLowerCase();
+const short = p => `${p.age} ${p.gender==='Non-binary'?'NB':p.gender[0]}, ${p.location}`;
+const runDone = () => S.run && S.run.done;
+const rows = () => DATA.slice(0, runDone() ? DATA.length : 0);
+
+function renderIR(){
+  const list = rows().slice().reverse();
+  const comp = list.filter(x=>x.status==='complete').length, part = list.length-comp;
+  if (!list.length){ $('#ir-body').innerHTML = `<div class="count" style="font-size:30px">Responses: 0</div><div class="empty"><h3>No responses yet</h3>Test responses from Audience Preview appear here when a run finishes.</div>`; return; }
+  $('#ir-body').innerHTML = `
+    <div class="count">Responses: ${list.length}</div>
+    <div class="counts">Completes - ${comp} / Partials - ${part} / Disqualified - 0 / Quarantined - 0</div>
+    <table class="t"><thead><tr><th><input type="checkbox"></th><th>ID</th><th>Status</th><th>Date Submitted</th><th class="prop">Persona</th><th>Have you purchased coffee from...</th></tr></thead><tbody>
+    ${list.map(p => `<tr><td><input type="checkbox"></td><td><a>${p.rid}</a></td>
+      <td>${p.status==='complete'?'<span class="badge b-new">New</span>':'<span class="badge b-part">Partial</span>'}<span class="badge b-test">Test</span></td>
+      <td>${fmtDate(p.end)}</td>
+      <td><span class="chip"><span class="spk">${svg('sparkles')}</span>${esc(short(p))}</span>
+        <span class="cmt">${svg('msg')}1<span class="tip"><span class="who">${svg('sparkles')} Audience Preview persona</span>${esc(p.age+', '+p.gender+', '+p.location+'. '+p.occupation+'. '+p.attitude)}</span></span></td>
+      <td>${p.screener}</td></tr>`).join('')}
+    </tbody></table>`;
+}
+
+/* ---------- results: audience preview ---------- */
+const FINDINGS = {
+  high: [
+    ['The screener doesn\'t screen anyone out','Answering No to "Have you purchased coffee... in the past 30 days?" continues to Demographics. Add Disqualify logic on No.'],
+    ['The drive-thru follow-up shows to everyone','It appears whatever ordering method is chosen, and its title shows an internal note to respondents. One walk-in persona answered "I don\'t use the drive thru."'],
+  ],
+  low: [
+    ['Double-barreled question','"How satisfied are you with the price and quality..." asks about two things personas disagreed on. Split it.'],
+    ['"None of these" conflicts with a required question','Respondents who visited none of the vendors must still pick a usual vendor.'],
+    ['"Other" has no write-in box','A Wawa regular was recorded only as "Other."'],
+    ['Demographics come first','Asking income and age up front tends to increase drop-off. Move them to the end.'],
+    ['Region question asks for a state','It says "state or region" but only lists regions.'],
+    ['14 to 17 age band with no age check','Terminate on 14 to 17, or add a consent step if minors are allowed.'],
+    ['No homemaker option','A stay-at-home parent had to answer "Unemployed."'],
+    ['Two names for one thing','"Usual vendor" and "main vendor" both appear. Pick one.'],
+  ],
+  never: 'Delivery (order method), None of these (vendors visited), Very dissatisfied (satisfaction), Outside the U.S. (region)',
+};
+function renderAPIfOpen(){ if (S.view==='ap') renderAP(); if (S.view==='ir') renderIR(); }
+function renderAP(){
+  const b = $('#ap-body');
+  if (!S.run){ b.innerHTML = `<div class="empty"><h3>No Audience Preview runs yet</h3><p>Start one from the Test tab: Invite Others to Test, then Invite by Other System.</p><button class="btn" id="ap-start">${svg('sparkles')} Start a preview</button></div>`;
+    $('#ap-start').onclick = () => { go('test'); M={tab:'other',ap:true,step:'setup'}; S.cfg=defaults(); openModal(); }; return; }
+  if (!S.run.done){ b.innerHTML = `<div class="empty"><h3>Run in progress</h3><p>${S.run.sent} of ${S.run.cfg.n} responses submitted. Results appear here when the run finishes.</p><button class="btn ghost" id="ap-open">Show progress</button></div>`;
+    $('#ap-open').onclick = openPanel; return; }
+  const all = DATA, comp = all.filter(p=>p.status==='complete'), parts = all.filter(p=>p.status!=='complete');
+  const vis = comp.filter(p => S.seg==='all' || p.group===S.seg);
+  const avg = comp.reduce((a,p)=>a+p.duration,0)/comp.length;
+  const c = S.run.cfg;
+  b.innerHTML = `
+    <div class="runbar">
+      <div class="meta"><b>Run 1</b> &middot; ${fmtDate(all[0].start)} to ${new Date(all[all.length-1].end).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}).toLowerCase()} &middot; ${c.n} personas &middot; Audience: ${c.audience==='infer'?'inferred from survey (US adults who buy shop coffee)':esc(c.audText)}</div>
+      <div class="acts"><button class="btn ghost sm" id="ap-ins">${svg('file')} Instructions</button><button class="btn sm" id="ap-again">${svg('sparkles')} Run again</button></div>
+    </div>
+    <div id="ap-insbox" hidden style="padding:0 20px 16px;border-bottom:1px solid var(--line)"><pre class="prompt">${esc(promptText(c))}</pre></div>
+    <div class="tiles">
+      <div class="tile"><div class="k">Completed</div><div class="v">${comp.length} of ${comp.length}</div><div class="s">0 blocked by bot checks</div></div>
+      <div class="tile"><div class="k">Avg time per response</div><div class="v">${Math.round(avg)} s</div><div class="s">Faster than a person; may trip speeder checks</div></div>
+      <div class="tile"><div class="k">Design issues</div><div class="v" style="color:var(--warn)">2 high</div><div class="s">8 other findings</div></div>
+      <div class="tile"><div class="k">Leftovers</div><div class="v">${parts.length}</div><div class="s">Partial response to delete</div></div>
+    </div>
+    <div class="sec">
+      <h3>${svg('warn')} Survey design findings</h3>
+      ${FINDINGS.high.map(f=>`<div class="finding high">${svg('warn')}<div><b>${f[0]}</b>${f[1]}</div></div>`).join('')}
+      <details class="more" style="margin:10px 0 0"><summary>${svg('chevR','chev')} 8 other findings</summary><div class="body">
+        ${FINDINGS.low.map(f=>`<div class="finding low">${svg('info')}<div><b>${f[0]}</b>${f[1]}</div></div>`).join('')}
+        <div class="hint" style="margin:6px 0 8px">Options no persona chose: ${FINDINGS.never}.</div>
+      </div></details>
+    </div>
+    <div class="sec">
+      <h3>Personas <span style="font-weight:400;color:var(--muted);font-size:13px">${vis.length} shown</span>
+        <span class="seg" id="ap-seg">${[['all','All'],['core','Core (14)'],['adjacent','Adjacent (6)']].map(([k,l])=>`<button data-s="${k}" class="${S.seg===k?'on':''}">${l}</button>`).join('')}</span></h3>
+      <table class="t"><thead><tr><th></th><th>Response</th><th>Persona</th><th>Segment</th><th>Attitude</th><th>Started</th><th>Time</th></tr></thead><tbody>
+      ${vis.map(p => `<tr class="prow" data-r="${p.rid}"><td>${svg(S.expanded.has(p.rid)?'chevD':'chevR')}</td><td><a>${p.rid}</a></td>
+        <td><b>${p.age}, ${esc(p.gender)}</b><div style="font-size:12px;color:var(--ink2)">${esc(p.location)} &middot; ${esc(p.occupation)}</div></td>
+        <td><span class="grp ${p.group==='core'?'g-core':'g-adj'}">${p.group==='core'?'Core':'Adjacent'}</span></td>
+        <td style="max-width:340px;font-size:12.5px;color:var(--ink2)">${esc(p.attitude)}</td>
+        <td style="white-space:nowrap">${fmtTime(p.start)}</td><td>${p.duration.toFixed(0)} s</td></tr>
+        ${S.expanded.has(p.rid)?`<tr class="detail"><td colspan="7"><div class="kv">
+          <div><span>Usual vendor</span><br>${esc(p.vendor)}</div><div><span>How they order</span><br>${esc(p.order)}</div>
+          <div><span>Recommend (0 to 10)</span><br>${esc(p.nps)}</div><div><span>Satisfaction</span><br>${esc(p.satisfaction)}</div></div>
+          <p class="quote">"${esc(p.why)}"</p>
+          <div class="mono" style="margin-top:8px">Persona ${p.pid} &middot; finished ${fmtTime(p.end)} &middot; <a>Open response ${p.rid}</a></div></td></tr>`:''}`).join('')}
+      </tbody></table>
+    </div>
+    <div class="sec">
+      <h3>${svg('trash')} Leftovers to delete</h3>
+      <p class="hint" style="margin:0 0 10px">Sessions that didn't finish still save a partial test response. They can't mix with live data, but they clutter test reports.</p>
+      ${parts.map(p=>`<div class="leftover"><span class="badge b-part">Partial</span><span class="badge b-test">Test</span>
+        <div><b>Response ${p.rid}</b> &middot; ${p.age}, ${esc(p.gender)}, ${esc(p.location)}, ${esc(p.occupation)}<div class="hint" style="margin:0">Screen-out tester. Stopped on Demographics because the screener didn't disqualify them.</div></div>
+        <button class="btn ghost sm" style="margin-left:auto">Open in Individual Responses</button></div>`).join('')}
+    </div>`;
+  $('#ap-ins').onclick = () => { const x=$('#ap-insbox'); x.hidden=!x.hidden; };
+  $('#ap-again').onclick = () => { go('test'); M={tab:'other',ap:true,step:'setup'}; S.cfg={...S.run.cfg}; openModal(); };
+  b.querySelectorAll('#ap-seg button').forEach(x => x.onclick = () => { S.seg=x.dataset.s; renderAP(); });
+  b.querySelectorAll('tr.prow').forEach(tr => tr.onclick = () => { const r=+tr.dataset.r; S.expanded.has(r)?S.expanded.delete(r):S.expanded.add(r); renderAP(); });
+  b.querySelectorAll('.leftover .btn').forEach(x => x.onclick = () => go('ir'));
+}
+
+go('test');
+</script>
+</body>
+</html>
