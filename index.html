@@ -102,4 +102,47 @@
       align-items: center;
       background-color: var(--accent);
       color: #0f172a;
-      text
+      text-decoration: none;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      transition: background-color 0.15s ease;
+    }
+    .launch-btn:hover {
+      background-color: var(--accent-hover);
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Product Management Prototypes</h1>
+      <p class="intro">
+        A curated collection of interactive front-end proofs-of-concept and workflow validations. Designed to explore user journey friction, zero-to-one problem validation, and enterprise software execution.
+      </p>
+    </header>
+
+    <div class="grid">
+      <!-- Project 1: Audience Preview -->
+      <article class="card">
+        <div class="card-header">
+          <h2 class="card-title">Audience Preview: Autonomous Survey Testing</h2>
+        </div>
+        <div class="tags">
+          <span class="tag">AI Agents</span>
+          <span class="tag">Synthetic Testing</span>
+          <span class="tag">B2B SaaS</span>
+          <span class="tag">QA Automation</span>
+        </div>
+        <div class="card-body">
+          <p><strong>The Problem:</strong> Traditional pre-launch survey testing relies on manual clicking or randomized dummy data that fails to trigger complex branching logic or produce realistic reporting distributions.</p>
+          <p><strong>The Solution:</strong> An autonomous agent workflow that traverses survey preview links as synthetic user personas, validating display logic and delivering automated survey design feedback.</p>
+        </div>
+        <a href="./audience-preview/" class="launch-btn" target="_blank" rel="noopener">Launch Interactive Demo &rarr;</a>
+      </article>
+    </div>
+  </div>
+</body>
+</html>
